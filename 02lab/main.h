@@ -10,23 +10,8 @@
 
 #define DIANA 1000
 
-enum BUTTON {
-	FIRST,
-	SECOND,
-	THIRD,
-	FOURTH,
-	NOT_SELECTED = UINT8_MAX,
-};
-
-enum STATE {
-	DISABLED,
-	ENABLED,
-};
-
 void Init(void);
 void delay(uint64_t tiks);
-
-void ProcessButton(enum BUTTON b);
 
 void EXTI0_IRQHandler(void);
 void EXTI1_IRQHandler(void);
