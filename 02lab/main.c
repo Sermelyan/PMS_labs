@@ -1,78 +1,70 @@
 #include "main.h"
 
-static uint8_t ButtonStates[4] = {DISABLED, DISABLED, DISABLED, DISABLED};
 static uint8_t Prescaler = NOT_SELECTED;
 
 void ProcessButton(enum BUTTON b) {
-	if (ButtonStates[b] == DISABLED) {
-		ButtonStates[b] = ENABLED;
-		Prescaler = b + 1;
+	if (Prescaler == NOT_SELECTED) {
 		switch (b) {
 			case FIRST:
-				EXTI->FTSR |= ~EXTI_FTSR_TR0;
-				EXTI->RTSR |= EXTI_RTSR_TR0;
-				break;
+				EXTI->FTSR |= EXTI_FTSR_TR10;
+				EXTI->RTSR ^= EXTI_RTSR_TR10;
+			break;
 			case SECOND:
-				EXTI->FTSR |= ~EXTI_FTSR_TR1;
-				EXTI->RTSR |= EXTI_RTSR_TR1;
-				break;
+				EXTI->FTSR |= EXTI_FTSR_TR11;
+				EXTI->RTSR ^= EXTI_RTSR_TR11;
+			break;
 			case THIRD:
-				EXTI->FTSR |= ~EXTI_FTSR_TR2;
-				EXTI->RTSR |= EXTI_RTSR_TR2;
-				break;
+				EXTI->FTSR |= EXTI_FTSR_TR12;
+				EXTI->RTSR ^= EXTI_RTSR_TR12;
+			break;
 			case FOURTH:
-				EXTI->FTSR |= ~EXTI_FTSR_TR3;
-				EXTI->RTSR |= EXTI_RTSR_TR3;
-				break;
+				EXTI->FTSR |= EXTI_FTSR_TR13;
+				EXTI->RTSR ^= EXTI_RTSR_TR13;
+			break;
 			case NOT_SELECTED:
-				//Такое значение сюда попадать не должно
-				break;
+			break;
 		}
-	} else {
-		ButtonStates[b] = DISABLED;
+		Prescaler = b;
+	} else if (b == Prescaler) {
+		switch (b) {
+			case FIRST:
+				EXTI->FTSR ^= EXTI_FTSR_TR10;
+				EXTI->RTSR |= EXTI_RTSR_TR10;
+			break;
+			case SECOND:
+				EXTI->FTSR ^= EXTI_FTSR_TR11;
+				EXTI->RTSR |= EXTI_RTSR_TR11;
+			break;
+			case THIRD:
+				EXTI->FTSR ^= EXTI_FTSR_TR12;
+				EXTI->RTSR |= EXTI_RTSR_TR12;
+			break;
+			case FOURTH:
+				EXTI->FTSR ^= EXTI_FTSR_TR13;
+				EXTI->RTSR |= EXTI_RTSR_TR13;
+			break;
+			case NOT_SELECTED:
+			break;
+		}
 		Prescaler = NOT_SELECTED;
-		switch (b) {
-			case FIRST:
-				EXTI->FTSR |= EXTI_FTSR_TR0;
-				EXTI->RTSR |= ~EXTI_RTSR_TR0;
-				break;
-			case SECOND:
-				EXTI->FTSR |= EXTI_FTSR_TR1;
-				EXTI->RTSR |= ~EXTI_RTSR_TR1;
-				break;
-			case THIRD:
-				EXTI->FTSR |= EXTI_FTSR_TR2;
-				EXTI->RTSR |= ~EXTI_RTSR_TR2;
-				break;
-			case FOURTH:
-				EXTI->FTSR |= EXTI_FTSR_TR3;
-				EXTI->RTSR |= ~EXTI_RTSR_TR3;
-				break;
-			case NOT_SELECTED:
-				//Такое значение сюда попадать не должно
-				break;
-		}
 	}
 }
 
-void EXTI0_IRQHandler() {
-	ProcessButton(FIRST);
-	EXTI->PR |= EXTI_PR_PR0;
-}
-
-void EXTI1_IRQHandler() {
-	ProcessButton(SECOND);
-	EXTI->PR |= EXTI_PR_PR1;
-}
-
-void EXTI2_IRQHandler() {
-	ProcessButton(THIRD);
-	EXTI->PR |= EXTI_PR_PR2;
-}
-
-void EXTI3_IRQHandler() {
-	ProcessButton(FOURTH);
-	EXTI->PR |= EXTI_PR_PR3;
+void EXTI15_10_IRQHandler(void) {
+	if (EXTI->PR & EXTI_PR_PR10) {
+		EXTI->PR = EXTI_PR_PR10;
+		ProcessButton(FIRST);
+	} else if (EXTI->PR & EXTI_PR_PR11) {
+		EXTI->PR = EXTI_PR_PR11;
+		ProcessButton(SECOND);
+	} else if (EXTI->PR & EXTI_PR_PR12) {
+		EXTI->PR = EXTI_PR_PR12;
+		ProcessButton(THIRD);
+	} else if (EXTI->PR & EXTI_PR_PR13) {
+		EXTI->PR = EXTI_PR_PR13;
+		ProcessButton(FOURTH);
+	}
+	delay(100);
 }
 
 void delay(uint64_t tiks) {
@@ -82,60 +74,54 @@ void delay(uint64_t tiks) {
 
 void Init() {
 	//Включаем порты PC0-PC3 на которых висят кнопки
-	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN | RCC_APB2ENR_AFIOEN;
+	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
 	
-	GPIOC->CRL &= ~(GPIO_CRL_MODE0 | GPIO_CRL_CNF0);
-	GPIOC->CRL &= ~(GPIO_CRL_MODE1 | GPIO_CRL_CNF1);
-	GPIOC->CRL &= ~(GPIO_CRL_MODE2 | GPIO_CRL_CNF3);
-	GPIOC->CRL &= ~(GPIO_CRL_MODE3 | GPIO_CRL_CNF3);
+	GPIOB->CRH &= ~(GPIO_CRH_MODE10 | GPIO_CRH_CNF10);
+	GPIOB->CRH &= ~(GPIO_CRH_MODE11 | GPIO_CRH_CNF11);
+	GPIOB->CRH &= ~(GPIO_CRH_MODE12 | GPIO_CRH_CNF12);
+	GPIOB->CRH &= ~(GPIO_CRH_MODE13 | GPIO_CRH_CNF13);
 	
-	GPIOC->CRL  |= GPIO_CRL_CNF0_1;
-	GPIOC->BSRR |= GPIO_BSRR_BS0;
-	GPIOC->CRL  |= GPIO_CRL_CNF1_1;
-	GPIOC->BSRR |= GPIO_BSRR_BS1;
-	GPIOC->CRL  |= GPIO_CRL_CNF2_1;
-	GPIOC->BSRR |= GPIO_BSRR_BS2;
-	GPIOC->CRL  |= GPIO_CRL_CNF3_1;
-	GPIOC->BSRR |= GPIO_BSRR_BS3;
+	GPIOB->CRH  |= GPIO_CRH_CNF10_1;
+	GPIOB->BSRR |= GPIO_BSRR_BR10;
+	GPIOB->CRH  |= GPIO_CRH_CNF11_1;
+	GPIOB->BSRR |= GPIO_BSRR_BR11;
+	GPIOB->CRH  |= GPIO_CRH_CNF12_1;
+	GPIOB->BSRR |= GPIO_BSRR_BR12;
+	GPIOB->CRH  |= GPIO_CRH_CNF13_1;
+	GPIOB->BSRR |= GPIO_BSRR_BR13;
 	
 	//Настравиваем прерывания по нажатию на кнопку
-	AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI0_PC;
-	AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI1_PC;
-	AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI2_PC;
-	AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI3_PC;
+	AFIO->EXTICR[2] |= AFIO_EXTICR3_EXTI10_PB;
+	AFIO->EXTICR[2] |= AFIO_EXTICR3_EXTI11_PB;
+	AFIO->EXTICR[3] |= AFIO_EXTICR4_EXTI12_PB;
+	AFIO->EXTICR[3] |= AFIO_EXTICR4_EXTI13_PB;
 	
-	EXTI->FTSR |= EXTI_FTSR_TR0;
-	EXTI->IMR  |= EXTI_IMR_MR0;
-	EXTI->FTSR |= EXTI_FTSR_TR1;
-	EXTI->IMR  |= EXTI_IMR_MR1;
-	EXTI->FTSR |= EXTI_FTSR_TR2;
-	EXTI->IMR  |= EXTI_IMR_MR2;
-	EXTI->FTSR |= EXTI_FTSR_TR3;
-	EXTI->IMR  |= EXTI_IMR_MR3;
+	EXTI->RTSR |= EXTI_RTSR_TR10;
+	EXTI->IMR  |= EXTI_IMR_MR10;
+	EXTI->RTSR |= EXTI_RTSR_TR11;
+	EXTI->IMR  |= EXTI_IMR_MR11;
+	EXTI->RTSR |= EXTI_RTSR_TR12;
+	EXTI->IMR  |= EXTI_IMR_MR12;
+	EXTI->RTSR |= EXTI_RTSR_TR13;
+	EXTI->IMR  |= EXTI_IMR_MR13;
 	
-	NVIC_EnableIRQ(EXTI0_IRQn);
-	NVIC_SetPriority(EXTI0_IRQn, 0);
-	NVIC_EnableIRQ(EXTI1_IRQn);
-	NVIC_SetPriority(EXTI1_IRQn, 1);
-	NVIC_EnableIRQ(EXTI0_IRQn);
-	NVIC_SetPriority(EXTI2_IRQn, 2);
-	NVIC_EnableIRQ(EXTI2_IRQn);
-	NVIC_SetPriority(EXTI3_IRQn, 3);
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+	NVIC_SetPriority(EXTI15_10_IRQn, 0);
 	
 	//Включаем динамик
-	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
 	
-	GPIOA->CRL &= ~(GPIO_CRL_MODE1 | GPIO_CRL_CNF1);
-	GPIOA->CRL |= GPIO_CRL_MODE1;
+	GPIOC->CRH &= ~(GPIO_CRH_MODE13 | GPIO_CRH_CNF13);
+	GPIOC->CRH |= GPIO_CRH_MODE13;
 }
 
 int main(void) {
 	Init();
 	while (1) {
 		if (Prescaler != NOT_SELECTED) {
-			delay(DIANA*Prescaler);
+			delay(DIANA*(Prescaler+1));
 			SPEAKER_ON();
-			delay(DIANA*Prescaler);
+			delay(DIANA*(Prescaler+1));
 			SPEAKER_OFF();
 		}
 	}

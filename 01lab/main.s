@@ -18,18 +18,18 @@ Reset_Handler	PROC    ; Вектор сброса
     export Reset_Handler
 	MOV32	R0, PERIPH_BB_BASE + \
 			(RCC_APB2ENR-PERIPH_BASE) * 32 + \
-			2 * 4						; вычисляем адрес для BitBanding 5-го бита регистра RCC_APB2ENR
+			3 * 4						; вычисляем адрес для BitBanding 5-го бита регистра RCC_APB2ENR
 										; BitAddress = BitBandBase + (RegAddr * 32) + BitNumber * 4
 	MOV		R1, #1						; включаем тактирование порта D (в 5-й бит RCC_APB2ENR пишем '1`)
 	STR 	R1, [R0]					; загружаем это значение
 	
-	MOV32	R0, GPIOA_CRH			    ; адрес порта
+	MOV32	R0, GPIOB_CRH			    ; адрес порта
 	MOV		R1, #2_0100					; 4-битная маска настроек для Output mode 50mHz, Push-Pull ("0011")
 	LDR		R2, [R0]					; считать порт
-    BFI		R2, R1, #4, #4    			; скопировать биты маски в позицию PIN7
-    BFI		R2, R1, #8, #4    			; скопировать биты маски в позицию PIN7
-    BFI		R2, R1, #12, #4    			; скопировать биты маски в позицию PIN7
-	BFI		R2, R1, #16, #4    			; скопировать биты маски в позицию PIN7
+	BFI		R2, R1, #8, #4    			; скопировать биты маски в позицию PIN7
+	BFI		R2, R1, #12, #4    			; скопировать биты маски в позицию PIN7
+    BFI		R2, R1, #16, #4    			; скопировать биты маски в позицию PIN7
+    BFI		R2, R1, #20, #4    			; скопировать биты маски в позицию PIN7
     STR		R2, [R0]					; загрузить результат в регистр настройки порта
     
     MOV32	R0, PERIPH_BB_BASE + \
@@ -46,7 +46,7 @@ Reset_Handler	PROC    ; Вектор сброса
     STR		R2, [R0]
 
     MOV32	R0, GPIOC_BSRR              ; адрес порта выходных сигналов
-    MOV32	R1, GPIOA_IDR               ; адрес порта выходных сигналов
+    MOV32	R1, GPIOB_IDR               ; адрес порта выходных сигналов
 
 loop									; Бесконечный цикл
     BL      get_button
@@ -54,7 +54,7 @@ loop									; Бесконечный цикл
     CMP     R4, #0
     BEQ     loop
     
-    MOV     R5, 0x1000
+    MOV     R5, 0x100
     MUL     R5, R4, R5
     
     MOV32 	R6, GPIO_BSRR_BS13	        ; устанавливаем вывод в '1'
@@ -65,7 +65,7 @@ loop									; Бесконечный цикл
 	MOV32	R6, GPIO_BSRR_BR13			; сбрасываем в '0'
 	STR 	R6, [R0]					; загружаем в порт
 	
-	MOV     R5, 0x1000
+	MOV     R5, 0x100
     MUL     R5, R4, R5
 	
 	BL		delay						; задержка
@@ -84,25 +84,25 @@ delay		PROC						; Подпрограмма задержки
 get_button  PROC
     LDR     R2, [R1]
     
-    ANDS    R3, R2, GPIO_IDR_IDR9
-    ITT     EQ
-    MOVEQ   R4, #1
-    BXEQ    LR
-    
     ANDS    R3, R2, GPIO_IDR_IDR10
-    ITT     EQ
-    MOVEQ   R4, #2
-    BXEQ    LR
-
-    ANDS    R3, R2, GPIO_IDR_IDR11
-    ITT     EQ
-    MOVEQ   R4, #3
-    BXEQ    LR
+    ITT     NE
+    MOVNE   R4, #1
+    BXNE    LR
     
+    ANDS    R3, R2, GPIO_IDR_IDR11
+    ITT     NE
+    MOVNE   R4, #2
+    BXNE    LR
+
     ANDS    R3, R2, GPIO_IDR_IDR12
-    ITT     EQ
-    MOVEQ   R4, #4
-    BXEQ    LR
+    ITT     NE
+    MOVNE   R4, #3
+    BXNE    LR
+    
+    ANDS    R3, R2, GPIO_IDR_IDR13
+    ITT     NE
+    MOVNE   R4, #4
+    BXNE    LR
     
     MOV     R4, #0
     BX		LR

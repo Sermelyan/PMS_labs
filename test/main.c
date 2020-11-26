@@ -9,6 +9,7 @@ int main(void) {
 	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
 	GPIOC->CRH &= ~(GPIO_CRH_CNF13 | GPIO_CRH_MODE13);
 	GPIOC->CRH |= GPIO_CRH_MODE13_1;
+	LED_OFF();
 	
 	while (1) {
 		LED_ON();
