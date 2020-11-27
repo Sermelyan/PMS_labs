@@ -5,11 +5,6 @@
 
 #include <stdint.h>
 
-#define	SPEAKER_ON()		GPIOC->BSRR = GPIO_BSRR_BS13
-#define	SPEAKER_OFF()		GPIOC->BSRR = GPIO_BSRR_BR13
-
-#define DIANA 256
-
 enum BUTTON {
 	FIRST,
 	SECOND,
@@ -18,16 +13,12 @@ enum BUTTON {
 	NOT_SELECTED = UINT8_MAX,
 };
 
-enum STATE {
-	DISABLED,
-	ENABLED,
-};
-
 void Init(void);
-void delay(uint64_t tiks);
 
 void ProcessButton(enum BUTTON b);
 
 void EXTI15_10_IRQHandler(void);
+void TIM2_IRQHandler(void);
+void TIM3_IRQHandler(void);
 
 #endif // _MAIN_H
