@@ -93,15 +93,15 @@ static inline void print9(void) {
 	setG();
 }
 
-void Init(void) {
+void InitDisplay(void) {
 	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
 	
 	TIM2->PSC = 36000-1;
-	TIM2->ARR = 20;
+	TIM2->ARR = 1;
 	TIM2->DIER |= TIM_DIER_UIE;
-	TIM2->CR1 |= TIM_CR1_OPM;
 	
 	NVIC_EnableIRQ(TIM2_IRQn);
+	NVIC_SetPriority(TIM2_IRQn, 1);
 	TIM2->CR1 |= TIM_CR1_CEN;
 	
 	disSel1();
@@ -109,29 +109,80 @@ void Init(void) {
 	disSel3();
 }
 
-static volatile char dp = 1;
+static inline void printDigit(uint8_t d) {
+	switch (d) {
+		case 0:
+			print0();
+			return;
+		case 1:
+			print1();
+			return;
+		case 2:
+			print2();
+			return;
+		case 3:
+			print3();
+			return;
+		case 4:
+			print4();
+			return;
+		case 5:
+			print5();
+			return;
+		case 6:
+			print6();
+			return;
+		case 7:
+			print7();
+			return;
+		case 8:
+			print8();
+			return;
+		case 9:
+			print9();
+			return;
+		default:
+			setA();
+			setD();
+			setE();
+			setF();
+			setG();
+			return;
+	}
+}
+
+static uint8_t firstD = 0;
+static uint8_t seconD = 0;
+static uint8_t thirdD = 0;
+
+void PrintNumber(uint32_t number) {
+	firstD = number % 10;
+	seconD = (number / 10) % 10;
+	thirdD = (number / 100) % 10;
+}
+
+static volatile uint8_t dp = 1;
 
 void TIM2_IRQHandler(void) {
 	TIM2->SR &= ~TIM_SR_UIF;
 	resetAll();
-	TIM2->CR1 |= TIM_CR1_CEN;
 	switch(dp) {
 		case 1:
 			disSel3();
 			select1();
-			print3();
+			printDigit(firstD);
 			dp = 2;
 			return;
 		case 2:
 			disSel1();
 			select2();
-			print2();
+			printDigit(seconD);
 			dp = 3;
 			return;
 		case 3:
 			disSel2();
 			select3();
-			print1();
+			printDigit(thirdD);
 			dp = 1;
 			return;
 	}	

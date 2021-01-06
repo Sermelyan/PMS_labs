@@ -1,6 +1,8 @@
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 
+#include <stdint.h>
+
 #include "stm32f10x.h"
 
 #define setA() GPIOB->BSRR = GPIO_BSRR_BS15
@@ -28,7 +30,8 @@
 #define select3() GPIOA->BSRR = GPIO_BSRR_BR15
 #define disSel3() GPIOA->BSRR = GPIO_BSRR_BS15
 
-void Init(void);
+void InitDisplay(void);
 void TIM2_IRQHandler(void);
+void PrintNumber(uint32_t number);
 
 #endif // _DISPLAY_H_
